@@ -29,6 +29,7 @@ module vault 'modules/keyvault.bicep' = {
   params: {
     keyVaultName: keyVaultName
     location: location
+    resourceTags: resourceTags
   }
 }
 
@@ -50,6 +51,7 @@ resource sqlPassword 'Microsoft.KeyVault/vaults/secrets@2021-04-01-preview' = {
 resource synapse 'Microsoft.Synapse/workspaces@2021-03-01' = {
   name: synapseName
   location: location
+  tags: resourceTags
   identity: {
     type: 'SystemAssigned'
   }

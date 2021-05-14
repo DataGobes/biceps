@@ -13,7 +13,7 @@ param workerSize string = '0'
 param workerSizeId string = '0'
 param numberOfWorkers string = '1'
 
-var insightsName = 'insights${resourceGroup().name}'
+var insightsName = 'insights${uniqueString(resourceGroup().name)}'
 
 resource functionApp 'Microsoft.Web/sites@2018-11-01' = {
   name: functionAppName

@@ -6,7 +6,9 @@ param resourceTags object = {
   application: 'Analytics'
 }
 
+
 param sqlLogin string
+param sqlPw string = 'Z${uniqueString('blabla')}!'
 
 var synapseName = '${synapsePrefix}${uniqueString(resourceGroup().name)}'
 var keyVaultName = 'kv${uniqueString(resourceGroup().name)}'
@@ -41,7 +43,7 @@ resource sqlPassword 'Microsoft.KeyVault/vaults/secrets@2021-04-01-preview' = {
     attributes: {
       enabled: true
     }
-    value: uniqueString('blabla')
+    value: sqlPw
   }
 }
 
@@ -57,10 +59,11 @@ resource synapse 'Microsoft.Synapse/workspaces@2021-03-01' = {
       filesystem: '${synst.outputs.containerName}'
     }
     publicNetworkAccess: 'Enabled'
+    managedVirtualNetwork: 'default'
     sqlAdministratorLogin: sqlLogin
-    sqlAdministratorLoginPassword: sqlPassword.properties.value
+    sqlAdministratorLoginPassword: sqlPw
   }
 }
 
 output sqlAdministratorLogin string = sqlLogin
-output sqlAdministratorLoginPassword string = sqlPassword.properties.value
+output sqlAdministratorLoginPassword string = sqlPw

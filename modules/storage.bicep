@@ -18,7 +18,7 @@ param isHnsEnabled bool = false
 param location string
 param resourceTags object
 
-var uniqueStorageName = '${storagePrefix}${uniqueString(resourceGroup().id)}'
+var uniqueStorageName = '${storagePrefix}${uniqueString(resourceGroup().name)}'
 
 resource stg 'Microsoft.Storage/storageAccounts@2019-04-01' = {
   name: uniqueStorageName

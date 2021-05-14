@@ -36,4 +36,11 @@ resource stg 'Microsoft.Storage/storageAccounts@2019-04-01' = {
   }
 }
 
+
+resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-02-01' = {
+  name: '${stg.name}/default/data'
+}
+
 output storageEndpoint object = stg.properties.primaryEndpoints
+output accountName string = stg.name
+output containerName string = container.name

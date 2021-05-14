@@ -32,7 +32,7 @@ param resourceTags object = {
 var uniqueStorageName = '${storagePrefix}${uniqueString(resourceGroup().id)}'
 var webAppPortalName = '${webAppName}${uniqueString(resourceGroup().id)}'
 
-module stg './storage.bicep' = {
+module stg '../modules/storage.bicep' = {
   name: 'storageDeploy'
   params: {
     storagePrefix: storagePrefix

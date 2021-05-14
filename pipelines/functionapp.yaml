@@ -1,0 +1,24 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- manual
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- checkout: self
+- task: AzureCLI@2
+  displayName: Deploying FunctionApp Infrastructure
+  inputs:
+    azureSubscription: 'Visual Studio Enterprise – MPN(7a906504-969b-4bbd-a4ec-7fe42c2b769a)'
+    scriptType: 'ps'
+    scriptLocation: 'inlineScript'
+    inlineScript: 'az deployment group create --resourcegroup $(resourcegroup) --template-file ./modules/functionapp.bicep'
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'

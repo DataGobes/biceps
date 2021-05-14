@@ -18,5 +18,5 @@ steps:
     scriptType: bash
     scriptLocation: 'inlineScript'
     inlineScript: |
-      az group create $(resourcegroup)
+      az group create --name $(resourcegroup) --location $(location)
       az deployment group create --resource-group $(resourcegroup) --template-file ./modules/functionapp.bicep --verbose

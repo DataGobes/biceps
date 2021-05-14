@@ -15,9 +15,9 @@ steps:
   displayName: Deploying FunctionApp Infrastructure
   inputs:
     azureSubscription: 'Visual Studio Enterprise – MPN(7a906504-969b-4bbd-a4ec-7fe42c2b769a)'
-    scriptType: 'ps'
+    scriptType: bash
     scriptLocation: 'inlineScript'
-    inlineScript: 'az deployment group create --resourcegroup $(resourcegroup) --template-file ./modules/functionapp.bicep'
+    inlineScript: 'az deployment group create --resourcegroup $(resourcegroup) --template-file ./modules/functionapp.bicep --verbose'
 - script: |
     echo Add other tasks to build, test, and deploy your project.
     echo See https://aka.ms/yaml

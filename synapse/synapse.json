@@ -1,0 +1,320 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.4.613.9944",
+      "templateHash": "3239434912432101125"
+    }
+  },
+  "parameters": {
+    "synapsePrefix": {
+      "type": "string",
+      "defaultValue": "syn"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "resourceTags": {
+      "type": "object",
+      "defaultValue": {
+        "environment": "Development",
+        "application": "Analytics"
+      }
+    },
+    "sqlLogin": {
+      "type": "string"
+    },
+    "sqlPw": {
+      "type": "string",
+      "defaultValue": "[format('Z{0}!', uniqueString('blabla'))]"
+    }
+  },
+  "functions": [],
+  "variables": {
+    "synapseName": "[format('{0}{1}', parameters('synapsePrefix'), uniqueString(resourceGroup().name))]",
+    "keyVaultName": "[format('kv{0}', uniqueString(resourceGroup().name))]",
+    "secretName": "[format('{0}/sqlPassword', variables('keyVaultName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-04-01-preview",
+      "name": "[variables('secretName')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('sqlPw')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'keyVault')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Synapse/workspaces",
+      "apiVersion": "2021-03-01",
+      "name": "[variables('synapseName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('resourceTags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "defaultDataLakeStorage": {
+          "accountUrl": "[format('https://{0}.dfs.core.windows.net/', reference(resourceId('Microsoft.Resources/deployments', 'synStorage'), '2019-10-01').outputs.accountName.value)]",
+          "filesystem": "[reference(resourceId('Microsoft.Resources/deployments', 'synStorage'), '2019-10-01').outputs.containerName.value]"
+        },
+        "publicNetworkAccess": "Enabled",
+        "managedVirtualNetwork": "default",
+        "sqlAdministratorLogin": "[parameters('sqlLogin')]",
+        "sqlAdministratorLoginPassword": "[parameters('sqlPw')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'synStorage')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "synStorage",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "isHnsEnabled": {
+            "value": true
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "resourceTags": {
+            "value": "[parameters('resourceTags')]"
+          },
+          "storagePrefix": {
+            "value": "synst"
+          },
+          "storageSKU": {
+            "value": "Standard_LRS"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.4.613.9944",
+              "templateHash": "9254261463794337342"
+            }
+          },
+          "parameters": {
+            "storagePrefix": {
+              "type": "string",
+              "maxLength": 11,
+              "minLength": 3
+            },
+            "storageSKU": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_RAGRS",
+                "Standard_ZRS",
+                "Premium_LRS",
+                "Premium_ZRS",
+                "Standard_GZRS",
+                "Standard_RAGZRS"
+              ]
+            },
+            "isHnsEnabled": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "location": {
+              "type": "string"
+            },
+            "resourceTags": {
+              "type": "object"
+            }
+          },
+          "functions": [],
+          "variables": {
+            "uniqueStorageName": "[format('{0}{1}', parameters('storagePrefix'), uniqueString(resourceGroup().name))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2019-04-01",
+              "name": "[variables('uniqueStorageName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('resourceTags')]",
+              "sku": {
+                "name": "[parameters('storageSKU')]"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "supportsHttpsTrafficOnly": true,
+                "allowBlobPublicAccess": false,
+                "isHnsEnabled": "[parameters('isHnsEnabled')]",
+                "minimumTlsVersion": "TLS1_2"
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-02-01",
+              "name": "[format('{0}/default/data', variables('uniqueStorageName'))]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStorageName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageEndpoint": {
+              "type": "object",
+              "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', variables('uniqueStorageName'))).primaryEndpoints]"
+            },
+            "accountName": {
+              "type": "string",
+              "value": "[variables('uniqueStorageName')]"
+            },
+            "containerName": {
+              "type": "string",
+              "value": "[format('{0}/default/data', variables('uniqueStorageName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2019-10-01",
+      "name": "keyVault",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "keyVaultName": {
+            "value": "[variables('keyVaultName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "resourceTags": {
+            "value": "[parameters('resourceTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.4.613.9944",
+              "templateHash": "14808588948056172579"
+            }
+          },
+          "parameters": {
+            "vaultPrefix": {
+              "type": "string",
+              "defaultValue": "kv"
+            },
+            "resourceTags": {
+              "type": "object",
+              "defaultValue": {
+                "environment": "Development",
+                "application": "keyVaultModule"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "objectid": {
+              "type": "string",
+              "defaultValue": "8aa7fa6a-253a-4900-b77a-065652d2d9b9"
+            },
+            "accessPolicies": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "tenantId": "[subscription().tenantId]",
+                  "objectId": "[parameters('objectid')]",
+                  "permissions": {
+                    "keys": [
+                      "all",
+                      "list",
+                      "get"
+                    ],
+                    "secrets": [
+                      "all",
+                      "list",
+                      "get"
+                    ]
+                  }
+                }
+              ]
+            },
+            "keyVaultName": {
+              "type": "string",
+              "defaultValue": "[format('{0}{1}', parameters('vaultPrefix'), uniqueString(resourceGroup().name))]"
+            },
+            "skuFamily": {
+              "type": "string",
+              "defaultValue": "A"
+            },
+            "skuName": {
+              "type": "string",
+              "defaultValue": "Standard"
+            }
+          },
+          "functions": [],
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2019-09-01",
+              "name": "[parameters('keyVaultName')]",
+              "tags": "[parameters('resourceTags')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "family": "[parameters('skuFamily')]",
+                  "name": "[parameters('skuName')]"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "accessPolicies": "[parameters('accessPolicies')]"
+              }
+            }
+          ],
+          "outputs": {
+            "keyVaultId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            },
+            "keyVaultName": {
+              "type": "string",
+              "value": "[parameters('keyVaultName')]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "sqlAdministratorLogin": {
+      "type": "string",
+      "value": "[parameters('sqlLogin')]"
+    },
+    "sqlAdministratorLoginPassword": {
+      "type": "string",
+      "value": "[parameters('sqlPw')]"
+    }
+  }
+}
